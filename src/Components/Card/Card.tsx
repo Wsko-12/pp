@@ -1,10 +1,11 @@
 import {memo, useEffect, useRef, useState} from "react";
 import {useFrame, useStore} from "@react-three/fiber";
-import {Color, PlaneGeometry} from "three";
+import {Color, DoubleSide, PlaneGeometry} from "three";
 
 interface ICardProps {
     index: number;
     isSelected: boolean;
+    isPushed: boolean
 }
 
 const colors = [
@@ -17,20 +18,33 @@ const colors = [
     'purple'
 ]
 
-const Card = memo<ICardProps>(({index, isSelected}) => {
+const Card = memo<ICardProps>(({index, isSelected, isPushed}) => {
     const geomRef = useRef<PlaneGeometry | null>(null)
     const [shift, setShift] = useState(0);
+    const [pushShift, setPushShift] = useState(0);
 
-    const defaultRotation = (3 - index ) * (Math.PI / 10)
+    const defaultRotation = (3 - index ) * (Math.PI / 10);
+
+    useFrame(() => {
+      if(isPushed){
+          if(pushShift > -1){
+              setPushShift(c => c - 0.1);
+          }
+      }
+    })
 
     const [rotateY, setRotateY] = useState(defaultRotation);
 
-    console.log(defaultRotation)
     useEffect(() => {
         geomRef.current?.translate(0, 0.8, 0)
     }, []);
 
     useFrame(() => {
+        if(isPushed){
+            setRotateY(0)
+            return
+        }
+
         if(isSelected){
             if(shift < 1){
                 const max = 3;
@@ -59,9 +73,9 @@ const Card = memo<ICardProps>(({index, isSelected}) => {
 
 
     return (
-        <mesh rotation={[0, 0, rotateY]} position={[0, -2.4 + shift, 0]}>
+        <mesh rotation={[pushShift, 0, rotateY]} position={[0, -2.4 + shift + pushShift * -1, pushShift]}>
             <planeGeometry args={[0.71428571428 * 1.5, 1.5]} ref={geomRef}/>
-            <meshBasicMaterial color={colors[index]}/>
+            <meshBasicMaterial color={colors[index]} side={DoubleSide}/>
         </mesh>
     )
 })
